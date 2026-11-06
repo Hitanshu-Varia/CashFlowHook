@@ -42,6 +42,8 @@ When `NAV_READ_MODE=ondo-usdy`, the indexer uses Ondo's documented USDY Oracle W
 
 The read-only source can be checked at `GET /nav/source/:asset` (for example, `/nav/source/0x96F6eF951840721AdBF46Ac996b59E0235CB985C`). It does not need a signer or send a transaction. Posting with `POST /nav/:asset` additionally requires a NAV signer and a deployed `NavSignalOracle` address on the configured destination chain.
 
+The `.env.example` includes the official Uniswap v4 PoolManager and PositionManager addresses for Base Sepolia. These let the deployment script wire the hook to the testnet PoolManager.
+
 ## Verification
 
 Run package-local tooling to preserve the checked-in pnpm store layout:
