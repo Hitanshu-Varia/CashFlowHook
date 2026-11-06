@@ -16,11 +16,19 @@ Until that gate is signed in [`DECISIONS.md`](DECISIONS.md), the only honest fal
 ## Local configuration
 
 Create an untracked `.env` locally. Do not commit secrets or paste private keys into an issue, chat, or repository.
+Copy `.env.example` to `.env`; the indexer loads that root file automatically when it starts.
 
 ```dotenv
 # Required for the first read-only integration pass
 RPC_FORK_URL=
 RPC_ETH_MAINNET=
+
+# Enables the read-only USDY issuer-oracle adapter on Ethereum mainnet.
+NAV_READ_MODE=ondo-usdy
+
+# Destination for signed oracle records. Use 84532 for Base Sepolia.
+CHAIN_ID=84532
+RPC_BASE_SEPOLIA=
 
 # Verified addresses only; leave blank until their primary sources are recorded
 STOCK_TOKEN_BASE=
@@ -29,6 +37,10 @@ USDY_ADDR_ETH=
 ```
 
 Wallet keys are needed only for local-fork deployment or explicitly authorised oracle-posting tests. The indexer accepts `ORACLE_SIGNER_KEY`/`NAV_SIGNER_KEY` and local fork contract addresses when that stage is reached.
+
+When `NAV_READ_MODE=ondo-usdy`, the indexer uses Ondo's documented USDY Oracle Wrapper and follows its live ContinuousPriceOracle implementation before publishing a record. The optional `USDY_INSTANT_MANAGER_ETH` and `USDY_ORACLE_WRAPPER_ETH` settings are migration overrides. `USDY_CONTINUOUS_ORACLE_ETH` is an intentional implementation pin: set it only after reviewing an issuer migration, because a mismatch fails closed.
+
+The read-only source can be checked at `GET /nav/source/:asset` (for example, `/nav/source/0x96F6eF951840721AdBF46Ac996b59E0235CB985C`). It does not need a signer or send a transaction. Posting with `POST /nav/:asset` additionally requires a NAV signer and a deployed `NavSignalOracle` address on the configured destination chain.
 
 ## Verification
 

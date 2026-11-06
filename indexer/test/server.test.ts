@@ -200,6 +200,19 @@ describe("indexer HTTP surface", () => {
     expect(stored.gateOpen).toBe(true);
   });
 
+  it("serves a read-only NAV source record without posting a transaction", async () => {
+    const { server, nav } = setup();
+    const base = await listen(server);
+    const response = await fetch(`${base}/nav/source/${ASSET}`);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      ...nav,
+      navPerShareWad: nav.navPerShareWad.toString(),
+      accrualPerSecondWad: nav.accrualPerSecondWad.toString(),
+      observedAt: nav.observedAt.toString(),
+    });
+  });
+
   it("returns 404 for an unposted NAV asset", async () => {
     const { server } = setup();
     const base = await listen(server);

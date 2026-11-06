@@ -1,10 +1,17 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { loadEnvFile } from "node:process";
 import { getAddress, isAddress } from "viem";
 import type { Address, Hex } from "viem";
-import { FileSnapshotSource, FileTakerSource, StaticNavSource, UnconfiguredNavSource } from "./adapters.js";
+import {
+  FileSnapshotSource,
+  FileTakerSource,
+  OndoUsdyNavSource,
+  StaticNavSource,
+  UnconfiguredNavSource,
+} from "./adapters.js";
 import type { NavSource, SnapshotSource, TakerSource } from "./adapters.js";
 import { buildStreamRecord, defaultWindowStart, OwnerInSampleError, takerSummary } from "./events.js";
 import type { NavOracleClient, StreamOracleClient } from "./oracle.js";
@@ -164,6 +171,16 @@ export function createApp(deps: AppDeps): Server {
         return json(res, 200, record);
       }
 
+      if (req.method === "GET" && parts[0] === "nav" && parts[1] === "source" && parts.length === 3) {
+        if (!deps.navSource) return json(res, 503, { error: "NAV source not configured" });
+        const asset = requireAddress(parts[2], "asset");
+        const record = await deps.navSource.read(asset);
+        if (record.asset.toLowerCase() !== asset.toLowerCase()) {
+          return json(res, 502, { error: "NAV source returned a different asset" });
+        }
+        return json(res, 200, record);
+      }
+
       if (req.method === "POST" && parts[0] === "nav" && parts.length === 2) {
         if (!deps.navSource || !deps.navSigner || !deps.navOracle) {
           return json(res, 503, { error: "NAV posting is not configured" });
@@ -227,7 +244,17 @@ function env(name: string): string | undefined {
   return value && value.length > 0 ? value : undefined;
 }
 
+function envAddress(name: string): Address | undefined {
+  const value = env(name);
+  if (!value) return undefined;
+  if (!isAddress(value, { strict: false })) throw new Error(`invalid ${name}`);
+  return getAddress(value);
+}
+
 export async function startFromEnv(): Promise<Server> {
+  const projectEnvFile = resolve(dirname(fileURLToPath(import.meta.url)), "../../.env");
+  if (existsSync(projectEnvFile)) loadEnvFile(projectEnvFile);
+
   const port = Number(env("INDEXER_PORT") ?? 8787);
   const chainId = Number(env("CHAIN_ID") ?? 8453);
 
@@ -243,20 +270,41 @@ export async function startFromEnv(): Promise<Server> {
   const snapshotPath = env("INDEXER_SNAPSHOTS_FILE");
   const takerPath = env("INDEXER_TAKERS_FILE");
   const navPath = env("INDEXER_NAV_STATIC_FILE");
+  const navMode = env("NAV_READ_MODE") ?? (navPath ? "static" : "unconfigured");
 
   const streamKey = (env("ORACLE_SIGNER_KEY") ?? env("ORACLE_PK")) as Hex | undefined;
   const navKey = (env("NAV_SIGNER_KEY") ?? env("NAV_PK")) as Hex | undefined;
-  const rpcUrl = env("RPC_FORK_URL");
+  const rpcUrl = chainId === 84532 ? env("RPC_BASE_SEPOLIA") : env("RPC_FORK_URL");
   const feeOracleAddress = env("FEE_STREAM_ORACLE_ADDR") as Address | undefined;
   const navOracleAddress = env("NAV_SIGNAL_ORACLE_ADDR") as Address | undefined;
 
   const { ViemNavOracleClient, ViemStreamOracleClient } = await import("./oracle.js");
 
+  let navSource: NavSource;
+  if (navPath) {
+    navSource = await loadStaticNav(navPath);
+  } else if (navMode === "ondo-usdy") {
+    const ethRpcUrl = env("RPC_ETH_MAINNET");
+    if (!ethRpcUrl) throw new Error("RPC_ETH_MAINNET is required when NAV_READ_MODE=ondo-usdy");
+    navSource = new OndoUsdyNavSource({
+      rpcUrl: ethRpcUrl,
+      asset: envAddress("USDY_ADDR_ETH"),
+      instantManager: envAddress("USDY_INSTANT_MANAGER_ETH"),
+      oracleWrapper: envAddress("USDY_ORACLE_WRAPPER_ETH"),
+      // Supply this only to pin a reviewed implementation during an issuer migration.
+      continuousOracle: envAddress("USDY_CONTINUOUS_ORACLE_ETH"),
+    });
+  } else if (navMode === "unconfigured" || navMode === "static") {
+    navSource = new UnconfiguredNavSource();
+  } else {
+    throw new Error(`unsupported NAV_READ_MODE: ${navMode}`);
+  }
+
   const deps: AppDeps = {
     store,
     snapshotSource: snapshotPath ? new FileSnapshotSource(snapshotPath) : undefined,
     takerSource: takerPath ? new FileTakerSource(takerPath) : undefined,
-    navSource: navPath ? await loadStaticNav(navPath) : new UnconfiguredNavSource(),
+    navSource,
     streamSigner:
       streamKey && feeOracleAddress
         ? new Eip712Signer(streamKey, chainId, feeOracleAddress)
