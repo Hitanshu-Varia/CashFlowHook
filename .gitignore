@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+**/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -9,16 +10,25 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+**/.pnpm-store
 
 # testing
 /coverage
+**/coverage
+/contracts/cache
+/contracts/out
+/contracts/broadcast
+/contracts/lib
 
 # next.js
 /.next/
+**/.next/
 /out/
+**/out/
 
 # production
 /build
+**/build
 
 # misc
 .DS_Store
@@ -31,7 +41,9 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
-.env*
+.env
+.env.*
+!.env.example
 
 # vercel
 .vercel
@@ -39,4 +51,3 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-agent/

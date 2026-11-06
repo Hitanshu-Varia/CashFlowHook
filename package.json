@@ -1,26 +1,30 @@
 {
-  "name": "cashflowhook",
-  "version": "0.1.0",
+  "name": "cashflow-hook",
+  "version": "3.0.0",
   "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+  "description": "CashflowHook v3 — non-custodial cross-margined credit line for an AI agent with three collateral classes",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22"
   },
-  "dependencies": {
-    "next": "16.4.5",
-    "react": "19.3.0",
-    "react-dom": "19.3.0"
+  "scripts": {
+    "dev": "pnpm --filter @cashflowhook/web dev",
+    "build": "pnpm --filter @cashflowhook/web build",
+    "start": "pnpm --filter @cashflowhook/web start",
+    "lint": "pnpm -r --if-present lint",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test": "pnpm -r --if-present test",
+    "mirror:test": "pnpm --filter @cashflowhook/ts-mirror test",
+    "goldens": "pnpm --filter @cashflowhook/ts-mirror generate:goldens",
+    "contracts:build": "forge build --root contracts",
+    "contracts:test": "forge test --root contracts",
+    "contracts:snapshot": "forge snapshot --root contracts",
+    "check:banned": "node scripts/check-banned-words.mjs",
+    "check:submission": "node scripts/check-submission.mjs",
+    "check": "pnpm check:banned && pnpm typecheck && pnpm test && pnpm contracts:test"
   },
   "devDependencies": {
-    "@tailwindcss/turbopack": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.4.5",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.9"
   }
 }

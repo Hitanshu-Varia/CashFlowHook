@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CashflowHook
 
-## Getting Started
+CashflowHook is a non-custodial, cross-margined credit-line prototype for an AI agent. It models three collateral classes together: tokenized equity, a locked Uniswap v4 LP position, and a tokenized-treasury NAV signal. The product specification and acceptance criteria live in [`Agent/cashflowhook_v3_agent.md`](Agent/cashflowhook_v3_agent.md).
 
-First, run the development server:
+## Current integration status
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+The deterministic math, contract surfaces, TypeScript mirror, policy service, indexer boundary, and a fixture-driven dashboard are present. The live RWA adapters are intentionally not configured yet: no RPC or issuer contract settings are committed, and the application will fail closed rather than fabricate a NAV, mark, or transfer result.
+
+The first live-data gate requires both of these read-only proofs:
+
+- a verified Base tokenized-equity contract, with a reproducible mark and fresh-wallet transfer path;
+- a verified Ethereum-mainnet OUSG or USDY issuer-state read, with its NAV/accrual mechanics and source transaction recorded.
+
+Until that gate is signed in [`DECISIONS.md`](DECISIONS.md), the only honest fallback is marks-only RWA with treasury coupon credit set to zero.
+
+## Local configuration
+
+Create an untracked `.env` locally. Do not commit secrets or paste private keys into an issue, chat, or repository.
+
+```dotenv
+# Required for the first read-only integration pass
+RPC_FORK_URL=
+RPC_ETH_MAINNET=
+
+# Verified addresses only; leave blank until their primary sources are recorded
+STOCK_TOKEN_BASE=
+OUSG_ADDR_ETH=
+USDY_ADDR_ETH=
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Wallet keys are needed only for local-fork deployment or explicitly authorised oracle-posting tests. The indexer accepts `ORACLE_SIGNER_KEY`/`NAV_SIGNER_KEY` and local fork contract addresses when that stage is reached.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Verification
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Run package-local tooling to preserve the checked-in pnpm store layout:
 
-## Learn More
+```powershell
+Push-Location Agent; .\node_modules\.bin\vitest.cmd run; .\node_modules\.bin\tsc.cmd --noEmit -p .; Pop-Location
+Push-Location ts-mirror; .\node_modules\.bin\vitest.cmd run; .\node_modules\.bin\tsc.cmd --noEmit -p .; Pop-Location
+Push-Location indexer; .\node_modules\.bin\vitest.cmd run; .\node_modules\.bin\tsc.cmd --noEmit -p .; Pop-Location
+Push-Location web; .\node_modules\.bin\vitest.cmd run; .\node_modules\.bin\tsc.cmd --noEmit -p .; .\node_modules\.bin\eslint.cmd .; Pop-Location
+```
 
-To learn more about Next.js, take a look at the following resources:
+Foundry is required for Solidity compilation, invariant tests, and fork tests. It is not bundled in this workspace.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Safety and scope
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This repository is a hackathon prototype, not a production lending service. External asset state is isolated behind adapters, signed records are monotonic, and stale data is intended to fail closed. See the v3 specification for the complete invariant and limitation set.

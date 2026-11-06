@@ -1,3 +1,7 @@
+## Primary build spec
+
+Before planning or writing any code, read `Agent/cashflowhook_v3_agent.md`. It is the single source of truth for this project (architecture, gates, invariants, sponsor requirements, build order, and definition of done). If it conflicts with intuition or other docs, the v3 agent file wins. `cashflowhook_v2_agent.md` is historical only.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 ## This is NOT the Next.js you know
