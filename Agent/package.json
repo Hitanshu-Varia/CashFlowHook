@@ -1,0 +1,19 @@
+{
+  "name": "@cashflowhook/agent",
+  "version": "3.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Deterministic policy engine, x402 receipt client, and World step-up client",
+  "scripts": {
+    "dev": "tsx src/main.ts",
+    "start": "tsx src/main.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.9"
+  }
+}
