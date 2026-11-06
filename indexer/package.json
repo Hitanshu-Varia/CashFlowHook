@@ -1,0 +1,22 @@
+{
+  "name": "@cashflowhook/indexer",
+  "version": "3.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Fee-taker, NAV-signal, and crash-dataset indexer for CashflowHook",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "viem": "^2.57.16"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}
